@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: todos
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db:3306
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: todos
+    volumes:
+      - ./api:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  front:
+    build:
+      context: ./front
+    ports:
+      - "5173:5173"
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+
+volumes:
+  db_data:
