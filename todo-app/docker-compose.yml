@@ -1,7 +1,6 @@
 services:
   db:
     image: mysql:8.0
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: todos
@@ -10,6 +9,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./db/schema:/docker-entrypoint-initdb.d
+      - ./db/mysql/my.cnf:/etc/mysql/conf.d/app.cnf:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
       interval: 5s
@@ -26,17 +26,19 @@ services:
       DB_USER: root
       DB_PASSWORD: password
       DB_NAME: todos
+      LOG_LEVEL: DEBUG
     volumes:
       - ./api:/app
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/todos"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       start_period: 10s
+      start_interval: 1s
+      interval: 600s
+      timeout: 30s
+      retries: 0
 
   front:
     build:

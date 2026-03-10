@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
+	"runtime"
 	"time"
+	_ "time/tzdata"
 	"todo-api/handler"
 	"todo-api/repository"
 	"todo-api/service"
@@ -15,11 +17,30 @@ import (
 	"gorm.io/gorm"
 )
 
+type healthResponse struct {
+	Status string `json:"status"`
+}
+
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return fallback
+}
+
+func initLogger() {
+	var level slog.Level
+	switch getEnv("LOG_LEVEL", "INFO") {
+	case "DEBUG":
+		level = slog.LevelDebug
+	case "WARN":
+		level = slog.LevelWarn
+	case "ERROR":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
 }
 
 func initDB() *gorm.DB {
@@ -28,7 +49,7 @@ func initDB() *gorm.DB {
 	host := getEnv("DB_HOST", "db:3306")
 	dbName := getEnv("DB_NAME", "todos")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&charset=utf8mb4", user, password, host, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&charset=utf8mb4&loc=Asia%%2FTokyo", user, password, host, dbName)
 
 	var db *gorm.DB
 	var err error
@@ -41,18 +62,37 @@ func initDB() *gorm.DB {
 		if err == nil {
 			break
 		}
-		log.Printf("waiting for db (%d/30): %v", i+1, err)
+		slog.Warn("waiting for db", "attempt", i+1, "error", err)
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		log.Fatal("could not connect to db:", err)
+		slog.Error("could not connect to db", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("db ready")
+	slog.Info("db ready")
 	return db
 }
 
 func main() {
+	initLogger()
+
+	loc, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		slog.Error("failed to load timezone", "error", err)
+		os.Exit(1)
+	}
+	time.Local = loc
+
+	now := time.Now()
+	slog.Info("server starting",
+		"time", now.Format(time.RFC3339),
+		"timezone", now.Location().String(),
+		"tz_offset", now.Format("-07:00"),
+		"go", runtime.Version(),
+		"os", runtime.GOOS+"/"+runtime.GOARCH,
+	)
+
 	db := initDB()
 
 	todoRepo := repository.NewTodoRepository(db)
@@ -66,6 +106,10 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, healthResponse{Status: "ok"})
+	})
 
 	api := e.Group("/api")
 	api.GET("/todos", todoHandler.GetAll)
