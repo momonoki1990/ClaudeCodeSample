@@ -4,3 +4,8 @@ node = "24.14.0"
 [tasks]
 up = "docker compose up -d --build"
 down = "docker compose down"
+down-v = "docker compose down -v"
+
+[tasks.recreate]
+depends = ["down-v"]
+run = "docker compose up -d --build"

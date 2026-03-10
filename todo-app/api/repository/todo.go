@@ -1,58 +1,71 @@
 package repository
 
 import (
-	"database/sql"
 	"todo-api/model"
+
+	"gorm.io/gorm"
 )
 
 type todoRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewTodoRepository(db *sql.DB) model.TodoRepository {
+func NewTodoRepository(db *gorm.DB) model.TodoRepository {
 	return &todoRepository{db: db}
 }
 
-func (r *todoRepository) FindAll() ([]model.Todo, error) {
-	rows, err := r.db.Query("SELECT id, text, done FROM todos ORDER BY id")
-	if err != nil {
-		return nil, err
+func (r *todoRepository) FindAll(categoryID *int) ([]model.Todo, error) {
+	var todos []model.Todo
+	q := r.db.Preload("Category").Order("position, id")
+	if categoryID != nil {
+		q = q.Where("category_id = ?", *categoryID)
 	}
-	defer rows.Close()
-
-	todos := []model.Todo{}
-	for rows.Next() {
-		var t model.Todo
-		if err := rows.Scan(&t.ID, &t.Text, &t.Done); err != nil {
-			return nil, err
-		}
-		todos = append(todos, t)
-	}
-	return todos, nil
+	return todos, q.Find(&todos).Error
 }
 
-func (r *todoRepository) Create(text string) (*model.Todo, error) {
-	res, err := r.db.Exec("INSERT INTO todos (text) VALUES (?)", text)
-	if err != nil {
+func (r *todoRepository) Create(text string, categoryID *int) (*model.Todo, error) {
+	todo := &model.Todo{Text: text, Done: false, CategoryID: categoryID}
+	if err := r.db.Create(todo).Error; err != nil {
 		return nil, err
 	}
-	id, _ := res.LastInsertId()
-	return &model.Todo{ID: int(id), Text: text, Done: false}, nil
+	r.db.Preload("Category").First(todo, todo.ID)
+	return todo, nil
 }
 
-func (r *todoRepository) Update(id int, done bool) (*model.Todo, error) {
-	if _, err := r.db.Exec("UPDATE todos SET done = ? WHERE id = ?", done, id); err != nil {
+func (r *todoRepository) Update(id int, text string, done bool, categoryID *int) (*model.Todo, error) {
+	var todo model.Todo
+	if err := r.db.First(&todo, id).Error; err != nil {
 		return nil, err
 	}
-	var t model.Todo
-	err := r.db.QueryRow("SELECT id, text, done FROM todos WHERE id = ?", id).Scan(&t.ID, &t.Text, &t.Done)
-	if err != nil {
+	todo.Text = text
+	todo.Done = done
+	todo.CategoryID = categoryID
+	if err := r.db.Save(&todo).Error; err != nil {
 		return nil, err
 	}
-	return &t, nil
+	r.db.Preload("Category").First(&todo, id)
+	return &todo, nil
 }
 
 func (r *todoRepository) Delete(id int) error {
-	_, err := r.db.Exec("DELETE FROM todos WHERE id = ?", id)
-	return err
+	return r.db.Delete(&model.Todo{}, id).Error
+}
+
+func (r *todoRepository) DeleteDone(categoryID *int) error {
+	q := r.db.Where("done = ?", true)
+	if categoryID != nil {
+		q = q.Where("category_id = ?", *categoryID)
+	}
+	return q.Delete(&model.Todo{}).Error
+}
+
+func (r *todoRepository) Reorder(ids []int) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for i, id := range ids {
+			if err := tx.Model(&model.Todo{}).Where("id = ?", id).Update("position", i).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

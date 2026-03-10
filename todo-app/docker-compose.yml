@@ -1,6 +1,7 @@
 services:
   db:
     image: mysql:8.0
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: todos
@@ -8,6 +9,7 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./db/schema:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
       interval: 5s
@@ -29,6 +31,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/todos"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   front:
     build:
@@ -37,8 +45,13 @@ services:
       - "5173:5173"
     environment:
       API_URL: http://api:8080
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./front:/app
+      - /app/node_modules
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   db_data:

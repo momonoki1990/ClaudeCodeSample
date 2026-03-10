@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -9,9 +9,10 @@ import (
 	"todo-api/repository"
 	"todo-api/service"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func getEnv(key, fallback string) string {
@@ -21,18 +22,21 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func initDB() *sql.DB {
-	dsn := getEnv("DB_USER", "root") + ":" +
-		getEnv("DB_PASSWORD", "password") + "@tcp(" +
-		getEnv("DB_HOST", "db:3306") + ")/" +
-		getEnv("DB_NAME", "todos") + "?parseTime=true"
+func initDB() *gorm.DB {
+	user := getEnv("DB_USER", "root")
+	password := getEnv("DB_PASSWORD", "password")
+	host := getEnv("DB_HOST", "db:3306")
+	dbName := getEnv("DB_NAME", "todos")
 
-	var db *sql.DB
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&charset=utf8mb4", user, password, host, dbName)
+
+	var db *gorm.DB
 	var err error
 	for i := 0; i < 30; i++ {
-		db, err = sql.Open("mysql", dsn)
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err == nil {
-			err = db.Ping()
+			sqlDB, _ := db.DB()
+			err = sqlDB.Ping()
 		}
 		if err == nil {
 			break
@@ -44,14 +48,6 @@ func initDB() *sql.DB {
 		log.Fatal("could not connect to db:", err)
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS todos (
-		id   INT AUTO_INCREMENT PRIMARY KEY,
-		text TEXT NOT NULL,
-		done BOOLEAN NOT NULL DEFAULT FALSE
-	)`)
-	if err != nil {
-		log.Fatal("could not create table:", err)
-	}
 	log.Println("db ready")
 	return db
 }
@@ -59,19 +55,31 @@ func initDB() *sql.DB {
 func main() {
 	db := initDB()
 
-	repo := repository.NewTodoRepository(db)
-	svc := service.NewTodoService(repo)
-	h := handler.NewTodoHandler(svc)
+	todoRepo := repository.NewTodoRepository(db)
+	todoSvc := service.NewTodoService(todoRepo)
+	todoHandler := handler.NewTodoHandler(todoSvc)
+
+	categoryRepo := repository.NewCategoryRepository(db)
+	categorySvc := service.NewCategoryService(categoryRepo)
+	categoryHandler := handler.NewCategoryHandler(categorySvc)
 
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	api := e.Group("/api")
-	api.GET("/todos", h.GetAll)
-	api.POST("/todos", h.Create)
-	api.PUT("/todos/:id", h.Update)
-	api.DELETE("/todos/:id", h.Delete)
+	api.GET("/todos", todoHandler.GetAll)
+	api.POST("/todos", todoHandler.Create)
+	api.PUT("/todos/reorder", todoHandler.Reorder)
+	api.PUT("/todos/:id", todoHandler.Update)
+	api.DELETE("/todos/done", todoHandler.DeleteDone)
+	api.DELETE("/todos/:id", todoHandler.Delete)
+
+	api.GET("/categories", categoryHandler.GetAll)
+	api.POST("/categories", categoryHandler.Create)
+	api.PUT("/categories/reorder", categoryHandler.Reorder)
+	api.PUT("/categories/:id", categoryHandler.Update)
+	api.DELETE("/categories/:id", categoryHandler.Delete)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
