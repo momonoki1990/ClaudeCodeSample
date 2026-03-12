@@ -12,3 +12,12 @@ export type Todo = {
   category: Category | null
   position: number
 }
+
+export type AuthResponse = {
+  token: string
+}
+
+export type UserInfo = {
+  id: number
+  email: string
+}

@@ -8,6 +8,8 @@ import (
 	"time"
 	_ "time/tzdata"
 	"todo-api/handler"
+	"todo-api/mailer"
+	apimw "todo-api/middleware"
 	"todo-api/repository"
 	"todo-api/service"
 
@@ -95,6 +97,15 @@ func main() {
 
 	db := initDB()
 
+	userRepo := repository.NewUserRepository(db)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
+	verifyRepo := repository.NewEmailVerificationTokenRepository(db)
+	passwordResetRepo := repository.NewPasswordResetTokenRepository(db)
+	m := mailer.NewMailerFromEnv()
+	appURL := getEnv("APP_URL", "https://localhost:5173")
+	userSvc := service.NewUserService(userRepo, refreshTokenRepo, verifyRepo, passwordResetRepo, m, appURL)
+	authHandler := handler.NewAuthHandler(userSvc)
+
 	todoRepo := repository.NewTodoRepository(db)
 	todoSvc := service.NewTodoService(todoRepo)
 	todoHandler := handler.NewTodoHandler(todoSvc)
@@ -111,7 +122,15 @@ func main() {
 		return c.JSON(200, healthResponse{Status: "ok"})
 	})
 
-	api := e.Group("/api")
+	e.POST("/api/auth/register", authHandler.Register)
+	e.POST("/api/auth/login", authHandler.Login)
+	e.POST("/api/auth/logout", authHandler.Logout)
+	e.POST("/api/auth/refresh", authHandler.Refresh)
+	e.GET("/api/auth/verify-email", authHandler.VerifyEmail)
+	e.POST("/api/auth/password-reset/request", authHandler.RequestPasswordReset)
+	e.POST("/api/auth/password-reset/confirm", authHandler.ConfirmPasswordReset)
+
+	api := e.Group("/api", apimw.JWTAuth())
 	api.GET("/todos", todoHandler.GetAll)
 	api.POST("/todos", todoHandler.Create)
 	api.PUT("/todos/reorder", todoHandler.Reorder)

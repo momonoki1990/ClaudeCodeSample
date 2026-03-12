@@ -25,6 +25,9 @@ front/dist/
 front/.next/
 front/build/
 
+# TLS certificates
+*.pem
+
 # Environment variables
 .env
 .env.local

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useNavigate } from "react-router-dom";
 import { Category, Todo } from "./types";
+import { apiFetch } from "./api";
 import { Drawer } from "./components/Drawer";
 import { TodoForm } from "./components/TodoForm";
 import { TodoList } from "./components/TodoList";
@@ -8,13 +9,13 @@ import { CategoryPage } from "./pages/CategoryPage";
 
 async function fetchTodos(categoryId: number | null): Promise<Todo[]> {
   const url = categoryId ? `/api/todos?category_id=${categoryId}` : "/api/todos";
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error("fetch failed");
   return res.json();
 }
 
 async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch("/api/categories");
+  const res = await apiFetch("/api/categories");
   if (!res.ok) throw new Error("fetch failed");
   return res.json();
 }
@@ -24,6 +25,7 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
   const tabs = useMemo(() => categories, [categories]);
 
@@ -38,8 +40,13 @@ export default function App() {
     reloadCategories();
   }, []);
 
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    navigate("/login");
+  };
+
   const addTodo = async (text: string) => {
-    await fetch("/api/todos", {
+    await apiFetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, category_id: filterCategoryId }),
@@ -50,7 +57,7 @@ export default function App() {
   const toggleTodo = async (id: number) => {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
-    await fetch(`/api/todos/${id}`, {
+    await apiFetch(`/api/todos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: todo.text, done: !todo.done, category_id: todo.category_id }),
@@ -61,7 +68,7 @@ export default function App() {
   const updateTodo = async (id: number, text: string, categoryId: number | null) => {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
-    await fetch(`/api/todos/${id}`, {
+    await apiFetch(`/api/todos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, done: todo.done, category_id: categoryId }),
@@ -70,12 +77,12 @@ export default function App() {
   };
 
   const deleteTodo = async (id: number) => {
-    await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/todos/${id}`, { method: "DELETE" });
     reloadTodos();
   };
 
   const reorderTodos = async (ids: number[]) => {
-    await fetch("/api/todos/reorder", {
+    await apiFetch("/api/todos/reorder", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
@@ -87,12 +94,12 @@ export default function App() {
     const url = filterCategoryId
       ? `/api/todos/done?category_id=${filterCategoryId}`
       : "/api/todos/done";
-    await fetch(url, { method: "DELETE" });
+    await apiFetch(url, { method: "DELETE" });
     reloadTodos();
   };
 
   const renameCategory = async (id: number, name: string) => {
-    await fetch(`/api/categories/${id}`, {
+    await apiFetch(`/api/categories/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -101,7 +108,7 @@ export default function App() {
   };
 
   const addCategory = async (name: string) => {
-    await fetch("/api/categories", {
+    await apiFetch("/api/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -110,7 +117,7 @@ export default function App() {
   };
 
   const deleteCategory = async (id: number) => {
-    await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/categories/${id}`, { method: "DELETE" });
     reloadCategories();
     if (filterCategoryId === id) {
       setFilterCategoryId(null);
@@ -121,7 +128,7 @@ export default function App() {
   };
 
   const reorderTabs = async (orderedIds: number[]) => {
-    await fetch("/api/categories/reorder", {
+    await apiFetch("/api/categories/reorder", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: orderedIds }),
@@ -150,17 +157,25 @@ export default function App() {
         }}
       >
         <Link to="/" style={{ fontSize: 20, fontWeight: "bold", textDecoration: "none", color: "inherit" }}>Todo</Link>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
-          aria-label="メニューを開く"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={handleLogout}
+            style={{ background: "none", border: "1px solid #ccc", borderRadius: 4, cursor: "pointer", padding: "4px 12px", fontSize: 14 }}
+          >
+            ログアウト
+          </button>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
+            aria-label="メニューを開く"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />

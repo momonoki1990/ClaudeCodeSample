@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	apimw "todo-api/middleware"
 	"todo-api/service"
 
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,7 @@ func NewTodoHandler(svc *service.TodoService) *TodoHandler {
 }
 
 func (h *TodoHandler) GetAll(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	var categoryID *int
 	if s := c.QueryParam("category_id"); s != "" {
 		id, err := strconv.Atoi(s)
@@ -25,7 +27,7 @@ func (h *TodoHandler) GetAll(c echo.Context) error {
 		}
 		categoryID = &id
 	}
-	todos, err := h.svc.GetAll(categoryID)
+	todos, err := h.svc.GetAll(userID, categoryID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -33,6 +35,7 @@ func (h *TodoHandler) GetAll(c echo.Context) error {
 }
 
 func (h *TodoHandler) Create(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	var body struct {
 		Text       string `json:"text"`
 		CategoryID *int   `json:"category_id"`
@@ -40,7 +43,7 @@ func (h *TodoHandler) Create(c echo.Context) error {
 	if err := c.Bind(&body); err != nil || body.Text == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid body")
 	}
-	todo, err := h.svc.Create(body.Text, body.CategoryID)
+	todo, err := h.svc.Create(userID, body.Text, body.CategoryID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -48,6 +51,7 @@ func (h *TodoHandler) Create(c echo.Context) error {
 }
 
 func (h *TodoHandler) Update(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
@@ -60,7 +64,7 @@ func (h *TodoHandler) Update(c echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid body")
 	}
-	todo, err := h.svc.Update(id, body.Text, body.Done, body.CategoryID)
+	todo, err := h.svc.Update(userID, id, body.Text, body.Done, body.CategoryID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -68,30 +72,33 @@ func (h *TodoHandler) Update(c echo.Context) error {
 }
 
 func (h *TodoHandler) Delete(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	if err := h.svc.Delete(id); err != nil {
+	if err := h.svc.Delete(userID, id); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *TodoHandler) Reorder(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	var body struct {
 		IDs []int `json:"ids"`
 	}
 	if err := c.Bind(&body); err != nil || len(body.IDs) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid body")
 	}
-	if err := h.svc.Reorder(body.IDs); err != nil {
+	if err := h.svc.Reorder(userID, body.IDs); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *TodoHandler) DeleteDone(c echo.Context) error {
+	userID := apimw.GetUserID(c)
 	var categoryID *int
 	if s := c.QueryParam("category_id"); s != "" {
 		id, err := strconv.Atoi(s)
@@ -100,7 +107,7 @@ func (h *TodoHandler) DeleteDone(c echo.Context) error {
 		}
 		categoryID = &id
 	}
-	if err := h.svc.DeleteDone(categoryID); err != nil {
+	if err := h.svc.DeleteDone(userID, categoryID); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return c.NoContent(http.StatusNoContent)

@@ -2,8 +2,8 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: todos
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
       - "3306:3306"
     volumes:
@@ -11,7 +11,7 @@ services:
       - ./db/schema:/docker-entrypoint-initdb.d
       - ./db/mysql/my.cnf:/etc/mysql/conf.d/app.cnf:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -22,22 +22,31 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: db:3306
-      DB_USER: root
-      DB_PASSWORD: password
-      DB_NAME: todos
-      LOG_LEVEL: DEBUG
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      LOG_LEVEL: ${LOG_LEVEL}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      APP_URL: ${APP_URL}
     volumes:
       - ./api:/app
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
-      start_period: 10s
-      start_interval: 1s
+      start_period: 120s
+      start_interval: 2s
       interval: 600s
-      timeout: 30s
+      timeout: 10s
       retries: 0
 
   front:
@@ -46,8 +55,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      API_URL: http://api:8080
-      CHOKIDAR_USEPOLLING: "true"
+      API_URL: ${API_URL}
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING}
     volumes:
       - ./front:/app
       - /app/node_modules
@@ -55,5 +64,16 @@ services:
       api:
         condition: service_healthy
 
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    volumes:
+      - mailpit_data:/data
+    environment:
+      MP_DATA_FILE: /data/mailpit.db
+
 volumes:
   db_data:
+  mailpit_data:

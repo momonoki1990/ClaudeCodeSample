@@ -2,10 +2,19 @@
 node = "24.14.0"
 
 [tasks]
+cp-env = "cp .env.sample .env"
 up = "docker compose up -d --build"
 down = "docker compose down"
 down-v = "docker compose down -v"
 
 [tasks.recreate]
-depends = ["down-v"]
-run = "docker compose up -d --build"
+depends = ["down-v", "cp-env"]
+run = [
+  "docker compose up -d --build",
+  '''
+  echo "
+  App:     http://localhost:5173
+  API:     http://localhost:8080
+  Mailpit: http://localhost:8025"
+  '''
+]

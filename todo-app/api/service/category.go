@@ -10,22 +10,22 @@ func NewCategoryService(repo model.CategoryRepository) *CategoryService {
 	return &CategoryService{repo: repo}
 }
 
-func (s *CategoryService) GetAll() ([]model.Category, error) {
-	return s.repo.FindAll()
+func (s *CategoryService) GetAll(userID int) ([]model.Category, error) {
+	return s.repo.FindAll(userID)
 }
 
-func (s *CategoryService) Create(name string) (*model.Category, error) {
-	return s.repo.Create(name)
+func (s *CategoryService) Create(userID int, name string) (*model.Category, error) {
+	return s.repo.Create(userID, name)
 }
 
-func (s *CategoryService) Update(id int, name string) (*model.Category, error) {
-	return s.repo.Update(id, name)
+func (s *CategoryService) Update(userID, id int, name string) (*model.Category, error) {
+	return s.repo.Update(userID, id, name)
 }
 
-func (s *CategoryService) Delete(id int) error {
-	return s.repo.Delete(id)
+func (s *CategoryService) Delete(userID, id int) error {
+	return s.repo.Delete(userID, id)
 }
 
-func (s *CategoryService) Reorder(ids []int) error {
-	return s.repo.Reorder(ids)
+func (s *CategoryService) Reorder(userID int, ids []int) error {
+	return s.repo.Reorder(userID, ids)
 }
