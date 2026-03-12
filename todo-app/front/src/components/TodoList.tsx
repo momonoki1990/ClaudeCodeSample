@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -16,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Category, Todo } from '../types'
 import { TodoItem } from './TodoItem'
+import { ConfirmModal } from './ConfirmModal'
 
 type SortableItemProps = {
   todo: Todo
@@ -75,6 +77,7 @@ function SortableTodoItem({ todo, categories, onToggle, onUpdate, onDelete }: So
 type Props = {
   todos: Todo[]
   categories: Category[]
+  currentCategoryName: string
   onToggle: (id: number) => void
   onUpdate: (id: number, text: string, categoryId: number | null) => void
   onDelete: (id: number) => void
@@ -82,8 +85,9 @@ type Props = {
   onReorder: (ids: number[]) => void
 }
 
-export function TodoList({ todos, categories, onToggle, onUpdate, onDelete, onDeleteDone, onReorder }: Props) {
+export function TodoList({ todos, categories, currentCategoryName, onToggle, onUpdate, onDelete, onDeleteDone, onReorder }: Props) {
   const hasDone = todos.some((t) => t.done)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -124,7 +128,7 @@ export function TodoList({ todos, categories, onToggle, onUpdate, onDelete, onDe
       {hasDone && (
         <div style={{ marginTop: 16, textAlign: 'right' }}>
           <button
-            onClick={onDeleteDone}
+            onClick={() => setConfirmOpen(true)}
             style={{
               padding: '6px 14px',
               background: 'none',
@@ -138,6 +142,14 @@ export function TodoList({ todos, categories, onToggle, onUpdate, onDelete, onDe
             完了済みを削除
           </button>
         </div>
+      )}
+      {confirmOpen && (
+        <ConfirmModal
+          title="完了済みを削除"
+          message={`「${currentCategoryName}」の完了済みタスクをすべて削除しますか？`}
+          onConfirm={() => { onDeleteDone(); setConfirmOpen(false) }}
+          onCancel={() => setConfirmOpen(false)}
+        />
       )}
     </>
   )

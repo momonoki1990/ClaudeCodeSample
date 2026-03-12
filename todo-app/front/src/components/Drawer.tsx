@@ -47,7 +47,6 @@ export function Drawer({ isOpen, onClose }: Props) {
         <nav style={{ display: 'flex', flexDirection: 'column' }}>
           {[
             { to: '/', label: 'HOME' },
-            { to: '/categories', label: 'カテゴリ管理' },
           ].map(({ to, label }) => (
             <Link
               key={to}

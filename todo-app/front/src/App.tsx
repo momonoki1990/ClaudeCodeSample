@@ -5,7 +5,7 @@ import { apiFetch } from "./api";
 import { Drawer } from "./components/Drawer";
 import { TodoForm } from "./components/TodoForm";
 import { TodoList } from "./components/TodoList";
-import { CategoryPage } from "./pages/CategoryPage";
+import { CategoryTabs } from "./components/CategoryTabs";
 
 async function fetchTodos(categoryId: number | null): Promise<Todo[]> {
   const url = categoryId ? `/api/todos?category_id=${categoryId}` : "/api/todos";
@@ -187,52 +187,26 @@ export default function App() {
             element={
               <>
                 <TodoForm onAdd={addTodo} />
-                <div
-                  style={{
-                    display: "flex",
-                    borderBottom: "2px solid #eee",
-                    marginBottom: 16,
-                    overflowX: "auto",
-                  }}
-                >
-                  {tabs.map((tab) => {
-                    const tabFilterId = tab.is_system ? null : tab.id;
-                    const active = filterCategoryId === tabFilterId;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => handleFilterChange(tabFilterId)}
-                        style={{
-                          padding: "8px 16px",
-                          background: "none",
-                          border: "none",
-                          borderBottom: active ? "2px solid #333" : "2px solid transparent",
-                          marginBottom: -2,
-                          cursor: "pointer",
-                          fontWeight: active ? "bold" : "normal",
-                          whiteSpace: "nowrap",
-                          fontSize: 14,
-                        }}
-                      >
-                        {tab.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                <TodoList todos={todos} categories={categories} onToggle={toggleTodo} onUpdate={updateTodo} onDelete={deleteTodo} onDeleteDone={deleteDoneTodos} onReorder={reorderTodos} />
+                <CategoryTabs
+                  tabs={tabs}
+                  filterCategoryId={filterCategoryId}
+                  onFilterChange={handleFilterChange}
+                  onAdd={addCategory}
+                  onRename={renameCategory}
+                  onDelete={deleteCategory}
+                  onReorder={reorderTabs}
+                />
+                <TodoList
+                  todos={todos}
+                  categories={categories}
+                  currentCategoryName={tabs.find((t) => t.id === filterCategoryId)?.name ?? 'すべて'}
+                  onToggle={toggleTodo}
+                  onUpdate={updateTodo}
+                  onDelete={deleteTodo}
+                  onDeleteDone={deleteDoneTodos}
+                  onReorder={reorderTodos}
+                />
               </>
-            }
-          />
-          <Route
-            path="/categories"
-            element={
-              <CategoryPage
-                tabs={tabs}
-                onAdd={addCategory}
-                onRename={renameCategory}
-                onDelete={deleteCategory}
-                onReorder={reorderTabs}
-              />
             }
           />
         </Routes>

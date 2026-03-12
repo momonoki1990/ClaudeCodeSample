@@ -24,7 +24,9 @@ func (r *todoRepository) FindAll(userID int, categoryID *int) ([]model.Todo, err
 }
 
 func (r *todoRepository) Create(userID int, text string, categoryID *int) (*model.Todo, error) {
-	todo := &model.Todo{UserID: userID, Text: text, Done: false, CategoryID: categoryID}
+	var minPos int
+	r.db.Model(&model.Todo{}).Where("user_id = ?", userID).Select("COALESCE(MIN(position), 1)").Scan(&minPos)
+	todo := &model.Todo{UserID: userID, Text: text, Done: false, CategoryID: categoryID, Position: minPos - 1}
 	if err := r.db.Create(todo).Error; err != nil {
 		return nil, err
 	}

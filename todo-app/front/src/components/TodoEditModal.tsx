@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Category, Todo } from '../types'
 
 type Props = {
@@ -81,13 +80,6 @@ export function TodoEditModal({ todo, categories, onSave, onDelete, onClose }: P
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
-          <Link
-            to="/categories"
-            onClick={onClose}
-            style={{ display: 'inline-block', marginTop: 6, fontSize: 13, color: '#555' }}
-          >
-            + カテゴリを追加
-          </Link>
         </label>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
