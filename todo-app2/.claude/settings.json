@@ -7,7 +7,8 @@
       "Read",
       "Bash(cargo *)",
       "Bash(git checkout -b feature/*)",
-      "Bash(git switch *)",
+      "Bash(git switch feature/*)",
+      "Bash(git switch -c feature/*)",
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git status*)",
@@ -21,11 +22,23 @@
       "Bash(git push origin develop*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
       "Bash(git checkout main*)",
       "Bash(git checkout develop*)",
-      "Read(./.env)",
-      "Read(./**/*.pem)",
-      "Read(./**/*.key)"
+      "Bash(git switch main*)",
+      "Bash(git switch develop*)",
+      "Bash(cargo install*)",
+      "Edit(./.claude/**)",
+      "Write(./.claude/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/.ssh/**)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/credentials)",
+      "Read(**/.aws/**)"
     ]
   }
 }
