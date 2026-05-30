@@ -38,7 +38,18 @@
       "Bash(gh pr merge *)",
       "Bash(ssh-add -l)",
       "Bash(ls*)",
-      "Bash(jq *)"
+      "Bash(jq *)",
+      "Bash(sleep*)",
+      "Bash(wait*)",
+      "Bash(kill*)",
+      "Bash(curl http://127.0.0.1*)",
+      "Bash(curl http://localhost*)",
+      "Bash(curl -s http://127.0.0.1*)",
+      "Bash(curl -s http://localhost*)",
+      "Bash(curl -sS http://127.0.0.1*)",
+      "Bash(curl -sS http://localhost*)",
+      "Bash(curl -i http://127.0.0.1*)",
+      "Bash(curl -i http://localhost*)"
     ],
     "ask": ["Edit(./.claude/**)", "Write(./.claude/**)"],
     "deny": [
