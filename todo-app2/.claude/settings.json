@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Read",
+      "Bash(cargo *)",
+      "Bash(git checkout -b feature/*)",
+      "Bash(git switch feature/*)",
+      "Bash(git switch -c feature/*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git push origin feature/*)",
+      "Bash(gh pr create *)"
+    ],
+    "deny": [
+      "Bash(git push origin main*)",
+      "Bash(git push origin develop*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git checkout main*)",
+      "Bash(git checkout develop*)",
+      "Bash(git switch main*)",
+      "Bash(git switch develop*)",
+      "Bash(cargo install*)",
+      "Edit(./.claude/**)",
+      "Write(./.claude/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/.ssh/**)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/credentials)",
+      "Read(**/.aws/**)"
+    ]
+  }
+}
