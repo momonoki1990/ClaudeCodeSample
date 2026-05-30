@@ -17,6 +17,7 @@
       "Bash(git push origin feature/*)",
       "Bash(gh pr create *)"
     ],
+    "ask": ["Edit(./.claude/**)", "Write(./.claude/**)"],
     "deny": [
       "Bash(git push origin main*)",
       "Bash(git push origin develop*)",
@@ -28,8 +29,6 @@
       "Bash(git switch main*)",
       "Bash(git switch develop*)",
       "Bash(cargo install*)",
-      "Edit(./.claude/**)",
-      "Write(./.claude/**)",
       "Read(**/.env)",
       "Read(**/.env.*)",
       "Read(**/*.pem)",
